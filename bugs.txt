@@ -1,0 +1,13 @@
+1) in registration page when the first field is pressed no description comes but when sec is pressed and then 1 is pressed we get output
+
+Updated on 19th April,2024 by Nithya
+
+Possible Issues to be faced after HTML Update:
+
+1.Ensure correct pass of data from JS to the Flask app.
+2.Formatting Issues are possible - some parts are unchecked due to problems faced in operating the SQL part
+3.Updation issues are possbile
+4.Excel data formatting Issues
+5.ML Extraction part?
+
+
