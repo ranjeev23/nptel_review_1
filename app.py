@@ -1,4 +1,5 @@
 from flask import Flask, render_template, redirect, url_for, request, session
+from flask import jsonify
 from database import db_class
 import os
 
@@ -8,6 +9,7 @@ app = Flask(__name__)
 my_db_connect = db_class.mysql_connector(
     "localhost", "root", "password", "nptel_management"
 )
+
 
 # Set a secret key
 app.secret_key = "BAD_SECRET_KEY"
@@ -33,6 +35,8 @@ def login():
 
         user = my_db_connect.validate_password(email, password)
         if user == "student":
+            reg_no = my_db_connect.get_regno(email)
+            session['regno'] = reg_no
             return redirect(url_for("student"))
         if user == "teacher":
             return redirect(url_for("admin_homepg"))
@@ -50,25 +54,21 @@ def admin_homepg():
 @app.route("/student")
 def student():
     std_username = session["username"]
-    std_info = my_db_connect.get_details_student(std_username)
-    verified = my_db_connect.get_verified_details(std_username)
-    nverified = my_db_connect.get_nverified_details(std_username)
-    rejected = my_db_connect.get_rej_details(std_username)
-    print("WELCOME TO STUDENT LOGIN PAGE")
-    print()
-    print("this is verified data and is in formatt")
-    print()
+    std_regno = session['regno']
+    std_info = my_db_connect.get_details_student(std_regno)
+    verified = my_db_connect.get_verified_details(std_regno)
+    nverified = my_db_connect.get_nverified_details(std_regno)
+    rejected = my_db_connect.get_rej_details(std_regno)
+    print("WELCOME TO STUDENT LOGIN PAGE\m")
+    print("this is verified data and is in formatt\n")
     print(std_info)
     print()
-    print("this is verified data and is in formatt")
-    print()
+    print("this is verified data and is in formatt\n")
     print(verified)
     print()
-    print("this is not_verified data and is in formatt")
-    print()
+    print("this is not_verified data and is in formatt\n")
     print(nverified)
-    print("this is rejected data and is in formatt")
-    print()
+    print("this is rejected data and is in formatt\n")
     print(rejected)
     print()
     return render_template(
@@ -131,6 +131,7 @@ def registration():
 def upload_certificate():
     if request.method == "POST":
         email_id = session["username"]
+        regno = session['regno']
         course = request.form["course"]
         marks = request.form["marks"]
 
@@ -146,11 +147,9 @@ def upload_certificate():
             file_name = file_name.lower().replace(" ", "_")
             certificate_file.save(os.path.join("./static/upload/", file_name))
 
-            my_db_connect.ins_certificate(email_id,course,marks,'link1',file_name)
+            my_db_connect.ins_certificate(regno,course,marks,'link1',file_name)
 
-            return render_template(
-                "success.html",
-            )
+            return 'successful'
 
 
 # Results page route
@@ -173,6 +172,7 @@ def statistics():
 @app.route("/verification")
 def verification():
     std_marks_info = my_db_connect.student_details()
+    print(std_marks_info)
     return render_template("admin_verification.html", std_marks_info=std_marks_info)
 
 
@@ -196,29 +196,46 @@ def admin_result():
 
 
 # Verify certificate page route
-@app.route("/verify_cert/<email_id>/<c_code>")
-def verify_cert(email_id,c_code):
-    file_name = my_db_connect.get_file_name(email_id, c_code)
+@app.route("/verify_cert/<regno>/<c_code>")
+def verify_cert(regno,c_code):
+    file_name = my_db_connect.get_file_name(regno, c_code)
     file_name = '/upload/'+file_name
-
-    text_details = my_db_connect.get_ver_details_admin(email_id, c_code)
+    text_details = my_db_connect.get_ver_details_admin(regno, c_code)
+ 
+    print(text_details)
 
     return render_template(
         "cert_check.html",
         filename=file_name,
-        details=text_details
+        details=text_details,
+        c_code = c_code
     )
 
-def correct(email_id,c_code,verified_marks):
-    my_db_connect.update_cert_correct(email_id,c_code)
-    my_db_connect.ins_nptel_marks(email_id,c_code,verified_marks)
-    print('succesfully added to correct db')
+@app.route("/execute_function", methods= ["POST"])
+def correct():    
+    print(request.form)
 
-def wrong(email_id,c_code,verified_marks):
+    # admin_mail_id
+    email_id = session["username"]
+
+    reg_no = request.form["registerNo"]
+    c_code = request.form['courseCode']
+    verified_marks = request.form['marks']
+
+    print((email_id,reg_no,c_code,verified_marks))
+    my_db_connect.update_cert_correct(reg_no,c_code)
+    my_db_connect.ins_nptel_marks(reg_no,c_code,verified_marks)
+    print('succesfully added to correct db')
+    return jsonify("succesfully added to correct db")
+
+@app.route('/wrong', methods=["POST"])
+def wrong():
+    print(request.form)
+    print('wrongggg')
     my_db_connect.update_cert_wrong(email_id,c_code)
     print('succesfully added to wrong db')
 
 
 # Run the app
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run(debug=True, port=8000)

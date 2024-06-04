@@ -26,24 +26,6 @@ class mysql_connector:
         except:
             print("error occured in setting connection with database")
 
-    # create the table in the given database
-    def create_table(self, table_name, col_dtype_dict: dict):
-
-        values = ""
-
-        values += "("
-        for key in col_dtype_dict:
-            values += str(key)
-            values += " "
-            values += str(col_dtype_dict[key])
-            values += ","
-        values = values[0 : len(values) - 1]
-        values += ")"
-
-        sql = "create table if not exists " + table_name + values + ";"
-
-        self.cursor.execute(sql)
-
     # insert table given table_name,values type is list
     def insert(self, table_name, values: tuple):
 
@@ -52,16 +34,6 @@ class mysql_connector:
         self.cursor.execute(sql)
 
         self.db.commit()
-
-    # fetch all values given a databse,tuple of values
-    def fetchall(self, table_name):
-
-        self.cursor.execute("select * from " + table_name)
-
-        results = self.cursor.fetchall()
-
-        for values in results:
-            print(values)
 
     def validate_password(self, email, pwd):
         # function to validate the password given by the user
@@ -86,18 +58,24 @@ class mysql_connector:
         else:
             return None
 
-    def get_details_student(self, email):
+    # get regno given std_email
+    def get_regno(self, email_id):
+        self.cursor.execute(f"select regno from student where email_id = '{email_id}'")
+        reg_no = self.cursor.fetchone()
+        return reg_no[0]
+
+    def get_details_student(self, regno):
         # function to get details of students for home page of student
         # input is email of the  student
         dic = dict()
 
         self.cursor.execute(
-            f"select st_name, regno, dept, acc_year from student where email_id = '{email}'"
+            f"select st_name, regno, email_id, acc_year from student where regno = '{regno}'"
         )
 
         std_details = self.cursor.fetchone()
 
-        format = ("name", "regno", "dept", "acc_year")
+        format = ("name", "regno", "email_id", "acc_year")
 
         for i in range(len(std_details)):
             dic[format[i]] = std_details[i]
@@ -218,13 +196,13 @@ class mysql_connector:
     # get the name sem sub marks from table
     def student_details(self):
         # write query
-        query = """select s.st_name, s.sem, c.c_name, ce.marks from student s join certificate ce on ce.email_id = s.email_id join course c on c.c_code = ce.c_code order by s.sem;"""
+        query = """select s.regno,s.st_name, s.sem, c.c_name, ce.marks,ce.verified,s.email_id,c.c_code from student s join certificate ce on ce.regno = s.regno join course c on c.c_code = ce.c_code order by s.sem;"""
         # execute query
         self.cursor.execute(query)
         # fetch the query
         details = self.cursor.fetchall()
         # convert to req formatt
-        order = ("name", "sem", "c_name", "ce_marks")
+        order = ('regno',"name", "sem", "c_name", "ce_marks", "verified","email_id","c_code")
         lis = []
         for data in details:
             dic = {}
@@ -240,9 +218,9 @@ class mysql_connector:
     def verified_details(self):
         # query to get student id, name subject_name, score
         query = """
-        select n.email_id,s.st_name, c.c_name, n.verified_marks 
+        select s.email_id,s.st_name, c.c_name, n.verified_marks 
         from nptel_marks n
-        join student s on s.email_id = n.email_id
+        join student s on s.regno = n.regno
         join course c on c.c_code = n.c_code;
         """
         # excetue and fetch the query
@@ -290,14 +268,14 @@ class mysql_connector:
 
         print(dict)
 
-    def get_verified_details(self, email):
+    def get_verified_details(self, regno):
         # complete details of verified certificates from user
         query_std = f"""
         select cour.c_name,verified_marks,ssn_marks 
         from nptel_marks n
-        join certificate cer on n.email_id = cer.email_id 
+        join certificate cer on n.regno = cer.regno 
         join course cour on cer.c_code = cour.c_code
-        where verified = 'ver' and n.email_id = '{email}'
+        where verified = 'ver' and n.regno = '{regno}'
         """
         print(query_std)
         # excetue and fetch the query
@@ -307,13 +285,13 @@ class mysql_connector:
         print(verified_details)
         return verified_details
 
-    def get_nverified_details(self, email):
+    def get_nverified_details(self, regno):
         # complete details of verified certificates from user
         query_std = f"""
         select cour.c_code,cour.c_name,marks 
         from certificate cer 
         join course cour on cer.c_code = cour.c_code
-        where verified = 'nver' and cer.email_id ='{email}' 
+        where verified = 'nver' and cer.regno ='{regno}' 
         """
         print(query_std)
         # excetue and fetch the query
@@ -323,14 +301,14 @@ class mysql_connector:
         print(nverified_details)
         return nverified_details
 
-    def get_rej_details(self, email):
+    def get_rej_details(self, regno):
         # complete details of verified certificates from user
         query_std = f"""
-        select r.std_email_id,c.c_name,c.c_code,teacher_email_id,issue 
+        select r.regno,c.c_name,c.c_code,teacher_email_id,issue 
         from rejected r
         join course c on c.c_code = r.c_code
         join teacher t on t.email_id = teacher_email_id
-        where std_email_id = '{email}'
+        where regno = '{regno}'
         """
         print(query_std)
         # excetue and fetch the query
@@ -339,33 +317,34 @@ class mysql_connector:
 
         print(rej_details)
         return rej_details
-    
-    def ins_certificate(self,email_id,c_code,marks,qr_code_link,certificate_link):
+
+    def ins_certificate(self,regno,c_code,marks,qr_code_link,certificate_link):
 
         query_ins = f'''
-        insert into certificate (email_id, c_code, marks, verified, upload_date, qr_code_url, certificate_link) values ('{email_id}', '{c_code}', {marks}, 'nver', CURRENT_TIMESTAMP,'{qr_code_link}', '{certificate_link}')
+        insert into certificate (regno, c_code, marks, verified, upload_date, qr_code_url, certificate_link) values ('{regno}', '{c_code}', {marks}, 'nver', CURRENT_TIMESTAMP,'{qr_code_link}', '{certificate_link}')
         '''
         self.cursor.execute(query_ins)
 
         self.db.commit()
 
-    def get_file_name(self,email,c_code):
+    def get_file_name(self,regno,c_code):
         query_file = f'''
-        select certificate_link from certificate where email_id = '{email}' and c_code = '{c_code}'
+        select certificate_link from certificate where regno = '{regno}' and c_code = '{c_code}'
         '''
 
         # excetue and fetch the query
         self.cursor.execute(query_file)
         certifcate_link = self.cursor.fetchone()[0]
-
+        print('ppppppppp')
+        print(certifcate_link)
         return certifcate_link
-    
-    def get_ver_details_admin(self,email,c_code):
+
+    def get_ver_details_admin(self,regno,c_code):
         query_det = f'''
-        select s.regno,cour.c_name,marks from certificate cer
-        join student s on s.email_id = cer.email_id
+        select s.regno,cour.c_name,marks,s.email_id from certificate cer
+        join student s on s.regno = cer.regno
         join course cour on cour.c_code = cer.c_code
-        where cer.email_id = '{email}' and cer.c_code = '{c_code}';
+        where cer.regno = '{regno}' and cer.c_code = '{c_code}';
         '''
         # excetue and fetch the query
         self.cursor.execute(query_det)
@@ -373,31 +352,471 @@ class mysql_connector:
 
         print(details)
         return details
-    
-    def ins_nptel_marks(self,email_id,c_code,marks):
+
+    def ins_nptel_marks(self,reg_no,c_code,marks):
         query_ins = f'''
-        insert into nptel_marks (email_id, c_code, verified_marks, verified_date) values ('{email_id}', '{c_code}', {marks}, CURRENT_TIMESTAMP)
+        insert into nptel_marks (regno, c_code, verified_marks, verified_date) values ('{reg_no}', '{c_code}', {marks}, CURRENT_TIMESTAMP)
         '''
         self.cursor.execute(query_ins)
 
         self.db.commit()
 
-    def update_cert_correct(self,email_id,c_code):
+    def update_cert_correct(self,regno,c_code):
         query_cor = f'''
         update certificate set verified = 'ver' 
-        where email_id = '{email_id}' and c_code = '{c_code}';
+        where regno = '{regno}' and c_code = '{c_code}';
         '''
         self.cursor.execute(query_cor)
         self.db.commit()
 
-    def update_cert_wrong(self,email_id,c_code):
+    def update_cert_wrong(self,regno,c_code):
         query_cor = f'''
         update certificate set verified = 'rej' 
-        where email_id = '{email_id}' and c_code = '{c_code}';
+        where regno = '{regno}' and c_code = '{c_code}';
         '''
         self.cursor.execute(query_cor)
         self.db.commit()
 
+    # NBA COMMANDS
+    def all_set_course(self):
+        print("")
+        print("this is the data for all the set courses id 1")
+        print("")
+        query_det = f"""
+        SELECT DISTINCT(c.c_name),c.c_code
+        FROM course c;
+        """
+
+        self.cursor.execute(query_det)
+        course_details = self.cursor.fetchall()
+        print(course_details)
+        return course_details
+
+    def get_details_course(self, c_code):
+        print("")
+        print("This is the data for available courses id 2")
+        print("")
+        query_det = f"""
+        select * from course
+        where c_code = '{c_code}';
+        """
+
+        self.cursor.execute(query_det)
+        course_details = self.cursor.fetchall()
+        print(course_details)
+        return course_details
+
+    def tot_avg_max(self, c_code):
+        print("")
+        print("This is the data for tot average mark id 3")
+        print("")
+        query_det = f"""
+        SELECT COUNT(regno),AVG(verified_marks),MAX(verified_marks) AS total_students
+        FROM NPTEL_MARKS
+        WHERE c_code = '{c_code}';
+        """
+
+        self.cursor.execute(query_det)
+        records = self.cursor.fetchall()
+        print(records)
+        return records
+
+    def toppers(self, c_code):
+        print("")
+        print("This is the data for toppers given sem and course code id 4")
+        print("")
+        query_det = f"""
+        SELECT nm.regno,s.st_name, nm.verified_marks,nm.acc_year, nm.sem_type
+        FROM NPTEL_MARKS nm
+        join student s on nm.regno = s.regno
+        WHERE nm.c_code = '{c_code}' -- Replace 'noc24-cs47' with your desired course code
+        ORDER BY nm.verified_marks DESC
+        LIMIT 10;
+        """
+
+        self.cursor.execute(query_det)
+        records = self.cursor.fetchall()
+        print(records)
+        return records
+
+    def convert_to_dicts(self, input_list):
+        output = [
+            {"year": str(year), "odd_semester": odd, "even_semester": even}
+            for year, even, odd in input_list
+        ]
+        return output
+
+    def enrollment_graph(self, c_code):
+        print("")
+        print("This is the data for double line graph chart id 5")
+        print("")
+        query_det = f"""
+        SELECT 
+            acc_year AS Year,
+            COUNT(CASE WHEN sem_type = 'even' THEN regno END) AS Even_Sem_Enrollment_Count,
+            COUNT(CASE WHEN sem_type = 'odd' THEN regno END) AS Odd_Sem_Enrollment_Count
+        FROM 
+            NPTEL_MARKS
+        where c_code = '{c_code}'
+        GROUP BY 
+            acc_year;
+        """
+
+        self.cursor.execute(query_det)
+        records = self.cursor.fetchall()
+        records = self.convert_to_dicts(records)
+        print("@@@@@@@")
+        print(records)
+        return records
+
+    def pie_chart(self, c_code):
+        print("")
+        print("This is the data for pie chart id 6")
+        print("")
+        query_det = f"""
+        SELECT 
+            sem, 
+            COUNT(DISTINCT regno) AS num_students_enrolled 
+        FROM NPTEL_MARKS 
+        WHERE c_code = '{c_code}' 
+        GROUP BY sem;
+        """
+
+        self.cursor.execute(query_det)
+        records = self.cursor.fetchall()
+        print(records)
+        return records
+
+    def silver_score_graph(self, c_code):
+        print("")
+        print("This is the data for slacked bar graph id 7")
+        print("")
+        query_det = f"""
+        SELECT 
+            acc_year AS Year,
+            COUNT(CASE WHEN sem_type = 'even' AND verified_marks BETWEEN 50 AND 80 THEN regno END) AS Even_Sem_Marks_Count,
+            COUNT(CASE WHEN sem_type = 'odd' AND verified_marks BETWEEN 50 AND 80 THEN regno END) AS Odd_Sem_Marks_Count
+        FROM 
+            NPTEL_MARKS
+            
+        where c_code = '{c_code}'
+        GROUP BY 
+            acc_year;
+        """
+
+        self.cursor.execute(query_det)
+        records = self.cursor.fetchall()
+        print(records)
+        return records
+
+    def gold_score_graph(self, c_code):
+        print("")
+        print("This is the data for multiple line chart id 8")
+        print("")
+
+        query_det = f"""
+        SELECT 
+            acc_year AS Year,
+            COUNT(CASE WHEN sem_type = 'even' AND verified_marks BETWEEN 80 AND 100 THEN regno END) AS Even_Sem_Marks_Count,
+            COUNT(CASE WHEN sem_type = 'odd' AND verified_marks BETWEEN 80 AND 100 THEN regno END) AS Odd_Sem_Marks_Count
+        FROM 
+            NPTEL_MARKS
+            
+        where c_code = '{c_code}'
+        GROUP BY 
+            acc_year;
+        """
+
+        self.cursor.execute(query_det)
+        records = self.cursor.fetchall()
+        print(records)
+        return records
+
+    def ins_std_table(self, records: list):
+
+        try:
+            query_ins = " "
+            for record in records:
+                # get the reg no and name and popullate the database
+                query_ins += f"""
+                        insert into student (regno, st_name) values ('{record[1]}', '{record[2]}');
+                        """
+                print(query_ins)
+            self.cursor.execute(query_ins)
+
+            self.db.commit()
+
+        except Exception as e:
+            # Handle the error, print a message, and optionally rollback the transaction
+            print("Error:", e)
+            # self.db.rollback()
+
+    def many_std_insert(self, data: list):
+        print("student DATTAAAA")
+        print(data)
+        regno = []
+        values = []
+        query_det = f"""
+        select regno from student;
+        """
+        self.cursor.execute(query_det)
+        old_course = [course[0] for course in self.cursor.fetchall()]
+        print(old_course)
+        for record in data:
+            if record[1] not in regno:
+                regno.append(record[1])
+                tup = (record[1], record[2])
+                if record[1] not in old_course:
+                    values.append(tup)
+        insert_st = "INSERT INTO STUDENT(regno,st_name) values (%s,%s)"
+        # print(values)
+        for value in values:
+            print(value)
+            self.cursor.execute(insert_st, value)
+        self.db.commit()
+        # self.db.close()
+        return True
+
+    def many_course_insert(self, data):
+        print("DATTAAAA")
+        print(data)
+        regno = []
+        values = []
+        query_det = f"""
+        select c_code from course;
+        """
+        self.cursor.execute(query_det)
+        old_course = [course[0] for course in self.cursor.fetchall()]
+        print(old_course)
+        for record in data:
+            # record[4] => code record[5] => c_name
+            if record[4] not in regno:
+                regno.append(record[4])
+                tup = (record[4], record[5])
+                if record[4] not in old_course:
+                    values.append(tup)
+        insert_st = "INSERT INTO COURSE(c_code,c_name) values (%s,%s)"
+        self.cursor.executemany(insert_st, values)
+        self.db.commit()
+        # self.db.close()
+        return True
+
+    def many_nptelmark_ins(self, data, sem, year):
+        print("DATTAAAA")
+        print(data)
+        regno_c_code = []
+        values = []
+        for record in data:
+            print(
+                type(record[1]), type(record[4]), type(record[7]), type(sem), type(year)
+            )
+            print(record[1], record[4], record[7], sem, year)
+            # record[1] => regno record[4] => c_code
+            if record[1] not in regno_c_code:
+                regno_c_code.append((record[1], record[4]))
+                tup = (record[1], record[4], record[7], record[3], year, sem)
+                values.append(tup)
+        # print(values)
+        insert_st = "INSERT INTO nptel_marks(regno,c_code,verified_marks,sem,acc_year,sem_type) values (%s,%s,%s,%s,%s,%s)"
+        for value in values:
+            print(value)
+
+            self.cursor.execute(insert_st, value)
+        self.db.commit()
+        # self.db.close()
+        return True
+
+    def facade_insert(self, data, sem, year):
+        """
+        inserts the values into student table,course and nptel_marks table
+        """
+        a = self.many_std_insert(data.copy())
+        if a:
+            b = self.many_nptelmark_ins(data.copy(), sem, year)
+        if b:
+            c = self.many_course_insert(data.copy())
+        print(a, b, c)
+        return True
+
+    def getUniqueRegnoCountBySemTypeAndYear(self, acc_year, sem_type):
+        print("")
+        print("This is the data for the unique regno count")
+        print("")
+
+        query_det = f"""
+        SELECT COUNT(DISTINCT regno) AS unique_regno_count
+        FROM NPTEL_MARKS
+        WHERE sem_type = '{sem_type}' AND acc_year = '{acc_year}';
+        """
+
+        self.cursor.execute(query_det)
+        records = self.cursor.fetchall()
+        print(records)
+        return records
+
+    def getUniqueCourseCodeCountBySemTypeAndYear(self, acc_year, sem_type):
+        print("")
+        print("This is the data for the unique course code given year and sem type")
+        print("")
+
+        query_det = f"""
+        SELECT COUNT(DISTINCT c_code) AS unique_course_code_count
+        FROM NPTEL_MARKS
+        WHERE sem_type = '{sem_type}' AND acc_year = '{acc_year}';
+        """
+
+        self.cursor.execute(query_det)
+        records = self.cursor.fetchall()
+        print(records)
+        return records
+
+    def getEnrolledCountGroupedByYearAndSemType(self):
+        print("")
+        print("This is the data for the unique enrolled count given year and sem_type")
+        print("")
+
+        query_det = f"""
+        SELECT 
+            acc_year,
+            SUM(CASE WHEN sem_type = 'odd' THEN count ELSE 0 END) AS odd_sem_count,
+            SUM(CASE WHEN sem_type  = 'even' THEN count ELSE 0 END) AS even_sem_count
+        FROM 
+            (SELECT 
+                acc_year,
+                sem_type,
+                COUNT(DISTINCT regno) AS count
+            FROM 
+                NPTEL_MARKS
+            GROUP BY 
+                acc_year, 
+                sem_type) AS subquery
+        GROUP BY 
+            acc_year
+        ORDER BY 
+            acc_year;
+        """
+
+        self.cursor.execute(query_det)
+        records = self.cursor.fetchall()
+        print(records)
+        return records
+
+    def getSemesterWiseCountByYearAndSemType(self, acc_year, sem_type):
+        print("")
+        print("This is the data for unique year given year and sem_type")
+        print("")
+
+        query_det = f"""
+        SELECT 
+            sem,
+            COUNT(distinct(regno)) AS count
+        FROM 
+            NPTEL_MARKS
+        WHERE 
+            acc_year = '{acc_year}' 
+            AND sem_type = '{sem_type}'
+        GROUP BY 
+            sem
+        ORDER BY 
+            sem;
+        """
+
+        self.cursor.execute(query_det)
+        records = self.cursor.fetchall()
+        print(records)
+        return records
+
+    def getDistinctAcademicYears(self):
+        print("")
+        print("This is the data for distinct accademic years available")
+        print("")
+
+        query_det = f"""
+        select distinct(acc_year) from nptel_marks;
+        """
+
+        self.cursor.execute(query_det)
+        records = self.cursor.fetchall()
+        print(records)
+        return records
+
+    def getDistinctSemesterTypes(self):
+        print("")
+        print("This is the data for different sem types available")
+        print("")
+
+        query_det = f"""
+        select distinct(sem_type) from nptel_marks;
+        """
+
+        self.cursor.execute(query_det)
+        records = self.cursor.fetchall()
+        print(records)
+        return records
+
+    def getToppersgivenSemandYear(self, sem, year):
+        print("")
+        print("This is the data for different toppers")
+        print("")
+        print(sem, year)
+        query_det = f"""
+        SELECT 
+    nm.regno,
+    s.st_name,
+    c.c_name,
+    nm.verified_marks,
+    nm.acc_year,
+    nm.sem_type
+FROM 
+    NPTEL_MARKS nm 
+    JOIN student s ON nm.regno = s.regno
+    JOIN course c ON c.c_code = nm.c_code
+WHERE 
+    nm.acc_year = '{year}' -- Specify the desired academic year
+    AND nm.sem_type = '{sem}' -- Specify the desired semester type
+ORDER BY
+    nm.verified_marks desc
+LIMIT 5;
+        """
+
+        self.cursor.execute(query_det)
+        records = self.cursor.fetchall()
+        print(records)
+        return records
+
+    def enorllemntcountyearwise(self):
+        print("")
+        print("This is the data for accademic year enrollment")
+        print("")
+        query_det = f"""
+        select acc_year,count(distinct(regno)) from nptel_marks group by acc_year;
+        """
+
+        self.cursor.execute(query_det)
+        records = self.cursor.fetchall()
+        records = [{"year": year, "enrollment_count": count} for year, count in records]
+        print(records)
+        return records
+
+    def course_enrollment_count(self):
+        print("")
+        print("This is the data for accademic year enrollment")
+        print("")
+        query_det = f"""
+        select c_name,count(regno) 
+        from nptel_marks nm
+        join course c on nm.c_code = c.c_code
+        group by nm.c_code 
+        order by count(regno) desc;
+        """
+
+        self.cursor.execute(query_det)
+        records = self.cursor.fetchall()
+        records = subject_enrollment_data = [
+            {"name": name, "count": count} for name, count in records
+        ]
+        print(records)
+        return records
 
 
 my_db_connect = mysql_connector("localhost", "root", "password", "nptel_management")
@@ -422,7 +841,7 @@ my_db_connect = mysql_connector("localhost", "root", "password", "nptel_manageme
 
 # my_db_connect.get_course_details(['Database Management Systems','Mechatronics'])
 
-# my_db_connect.student_details()
+my_db_connect.student_details()
 
 # my_db_connect.admin_verifcation_std_list()
 
@@ -438,4 +857,4 @@ my_db_connect = mysql_connector("localhost", "root", "password", "nptel_manageme
 
 # my_db_connect.get_ver_details_admin('rahul.sharma@ssn.edu.in','IT101')
 
-my_db_connect.update_cert_correct('rahul.sharma@ssn.edu.in','IT101')
+# my_db_connect.update_cert_correct('rahul.sharma@ssn.edu.in','IT101')

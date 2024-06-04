@@ -253,29 +253,33 @@
       <table id="studentResultsTable">
         <thead>
           <tr>
-            <th>Student ID</th>
-            <th>Name</th>
+            <th>Email Id</th>
+            <th>Student Name</th>
+            <th>Sem</th>
+            <th>Sub Code</th>
             <th>Subject</th>
             <th>Score</th>
             <th>Verification Status</th> 
+            <th>Certify</th>
           </tr>
         </thead>
         <tbody>
         
           <tr data-batch="2023" data-marks="85.5" data-subject="Mathematics">
-            <td>1</td>
-            <td>John Doe</td>
-            <td>Mathematics</td>
-            <td>90.5</td>
-            <td><a href="verify_cert/rahul.sharma@ssn.edu.in/IT101">Go to Verification</a></td>
+            {% for dictionary in std_marks_info %}
+              <tr data-batch="2023" data-marks="75.0" data-subject="Science">
+                <td>{{dictionary['email_id']}}</td>
+                <td>{{dictionary['name']}}</td>
+                <td>{{dictionary['sem']}}</td>
+                <td>{{dictionary['c_code']}}</td>
+                <td>{{dictionary['c_name']}}</td>
+                <td>{{dictionary['ce_marks']}}</td>
+                <td>{{dictionary['verified']}}</td>
+                <td><a href="verify_cert/{{dictionary['regno']}}/{{dictionary['c_code']}}">Go to Verification</a></td>
+              </tr>
+            {% endfor %}
           </tr>
-          <tr data-batch="2023" data-marks="75.0" data-subject="Science">
-            <td>2</td>
-            <td>Jane Doe</td>
-            <td>Science</td>
-            <td>80.0</td>
-            <td><a href="verify_cert">Go to Verification</a></td>
-          </tr>
+          
           <!-- Add more rows with actual data -->
         </tbody>
       </table>
