@@ -1,5 +1,6 @@
 import mysql.connector
 
+
 # create a class for populating mysql values
 class mysql_connector:
 
@@ -202,7 +203,16 @@ class mysql_connector:
         # fetch the query
         details = self.cursor.fetchall()
         # convert to req formatt
-        order = ('regno',"name", "sem", "c_name", "ce_marks", "verified","email_id","c_code")
+        order = (
+            "regno",
+            "name",
+            "sem",
+            "c_name",
+            "ce_marks",
+            "verified",
+            "email_id",
+            "c_code",
+        )
         lis = []
         for data in details:
             dic = {}
@@ -271,7 +281,7 @@ class mysql_connector:
     def get_verified_details(self, regno):
         # complete details of verified certificates from user
         query_std = f"""
-        select cour.c_name,verified_marks,ssn_marks 
+        select cour.c_name,verified_marks,ssn_marks, certificate_link 
         from nptel_marks n
         join certificate cer on n.regno = cer.regno 
         join course cour on cer.c_code = cour.c_code
@@ -288,7 +298,7 @@ class mysql_connector:
     def get_nverified_details(self, regno):
         # complete details of verified certificates from user
         query_std = f"""
-        select cour.c_code,cour.c_name,marks 
+        select cour.c_code,cour.c_name,marks, certificate_link 
         from certificate cer 
         join course cour on cer.c_code = cour.c_code
         where verified = 'nver' and cer.regno ='{regno}' 
@@ -304,7 +314,7 @@ class mysql_connector:
     def get_rej_details(self, regno):
         # complete details of verified certificates from user
         query_std = f"""
-        select r.regno,c.c_name,c.c_code,teacher_email_id,issue 
+        select r.regno,c.c_name,c.c_code,teacher_email_id,issue  
         from rejected r
         join course c on c.c_code = r.c_code
         join teacher t on t.email_id = teacher_email_id
@@ -318,34 +328,34 @@ class mysql_connector:
         print(rej_details)
         return rej_details
 
-    def ins_certificate(self,regno,c_code,marks,qr_code_link,certificate_link):
+    def ins_certificate(self, regno, c_code, marks, qr_code_link, certificate_link):
 
-        query_ins = f'''
+        query_ins = f"""
         insert into certificate (regno, c_code, marks, verified, upload_date, qr_code_url, certificate_link) values ('{regno}', '{c_code}', {marks}, 'nver', CURRENT_TIMESTAMP,'{qr_code_link}', '{certificate_link}')
-        '''
+        """
         self.cursor.execute(query_ins)
 
         self.db.commit()
 
-    def get_file_name(self,regno,c_code):
-        query_file = f'''
+    def get_file_name(self, regno, c_code):
+        query_file = f"""
         select certificate_link from certificate where regno = '{regno}' and c_code = '{c_code}'
-        '''
+        """
 
         # excetue and fetch the query
         self.cursor.execute(query_file)
         certifcate_link = self.cursor.fetchone()[0]
-        print('ppppppppp')
+        print("ppppppppp")
         print(certifcate_link)
         return certifcate_link
 
-    def get_ver_details_admin(self,regno,c_code):
-        query_det = f'''
+    def get_ver_details_admin(self, regno, c_code):
+        query_det = f"""
         select s.regno,cour.c_name,marks,s.email_id from certificate cer
         join student s on s.regno = cer.regno
         join course cour on cour.c_code = cer.c_code
         where cer.regno = '{regno}' and cer.c_code = '{c_code}';
-        '''
+        """
         # excetue and fetch the query
         self.cursor.execute(query_det)
         details = self.cursor.fetchone()
@@ -353,27 +363,27 @@ class mysql_connector:
         print(details)
         return details
 
-    def ins_nptel_marks(self,reg_no,c_code,marks):
-        query_ins = f'''
+    def ins_nptel_marks(self, reg_no, c_code, marks):
+        query_ins = f"""
         insert into nptel_marks (regno, c_code, verified_marks, verified_date) values ('{reg_no}', '{c_code}', {marks}, CURRENT_TIMESTAMP)
-        '''
+        """
         self.cursor.execute(query_ins)
 
         self.db.commit()
 
-    def update_cert_correct(self,regno,c_code):
-        query_cor = f'''
+    def update_cert_correct(self, regno, c_code):
+        query_cor = f"""
         update certificate set verified = 'ver' 
         where regno = '{regno}' and c_code = '{c_code}';
-        '''
+        """
         self.cursor.execute(query_cor)
         self.db.commit()
 
-    def update_cert_wrong(self,regno,c_code):
-        query_cor = f'''
+    def update_cert_wrong(self, regno, c_code):
+        query_cor = f"""
         update certificate set verified = 'rej' 
         where regno = '{regno}' and c_code = '{c_code}';
-        '''
+        """
         self.cursor.execute(query_cor)
         self.db.commit()
 
@@ -819,7 +829,7 @@ LIMIT 5;
         return records
 
     # CODE TO DELETE CERTIFICATE FOR STUDENT
-    def delete_certificate(self,regno,c_code):
+    def delete_certificate(self, regno, c_code):
         query_det = f"""
         select certificate_link 
         from certificate 
@@ -840,12 +850,12 @@ LIMIT 5;
 
         self.db.commit()
 
-        print('succesfully deleted')
+        print("succesfully deleted")
 
         return cert_link
 
     # add to rejected table
-    def add_rejected(self,reg_no,c_code,teacher_email,issue):
+    def add_rejected(self, reg_no, c_code, teacher_email, issue):
         query_ins = f"""
         insert into rejected (regno, c_code, teacher_email_id, issue, rejected_date) values ('{reg_no}', '{c_code}', '{teacher_email}', '{issue}', CURRENT_TIMESTAMP)
         """
@@ -896,4 +906,9 @@ my_db_connect = mysql_connector("localhost", "root", "password", "nptel_manageme
 
 # my_db_connect.update_cert_correct('rahul.sharma@ssn.edu.in','IT101')
 
-my_db_connect.add_rejected(3122225003103, "noc24-cs31", "gayathri@ssn.edu.in",'please add the correct the certificate')
+my_db_connect.add_rejected(
+    3122225003103,
+    "noc24-cs31",
+    "gayathri@ssn.edu.in",
+    "please add the correct the certificate",
+)
