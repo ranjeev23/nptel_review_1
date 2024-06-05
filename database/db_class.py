@@ -351,7 +351,7 @@ class mysql_connector:
 
     def get_ver_details_admin(self, regno, c_code):
         query_det = f"""
-        select s.regno,cour.c_name,marks,s.email_id from certificate cer
+        select s.regno,cour.c_name,marks,s.email_id,cour.c_code from certificate cer
         join student s on s.regno = cer.regno
         join course cour on cour.c_code = cer.c_code
         where cer.regno = '{regno}' and cer.c_code = '{c_code}';

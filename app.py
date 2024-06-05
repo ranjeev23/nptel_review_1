@@ -224,7 +224,7 @@ def correct():
     my_db_connect.update_cert_correct(reg_no, c_code)
     my_db_connect.ins_nptel_marks(reg_no, c_code, verified_marks)
     print("succesfully added to correct db")
-    return jsonify("succesfully added to correct db")
+    return redirect('/verification')
 
 
 # please use this function
@@ -247,13 +247,15 @@ def delete_certificate():
 
 @app.route("/wrong", methods=["POST"])
 def wrong():
+    print(request.form)
     reg_no = request.form["registerNo"]
-    c_code = request.form["courseName"]
+    c_code = request.form["courseCode"]
     teacher_email = session["username"]
     issue = request.form["issue"]
     my_db_connect.add_rejected(reg_no, c_code, teacher_email, issue)
     my_db_connect.update_cert_wrong(reg_no, c_code)
     print("succesfully added to wrong db")
+    return redirect("/verification")
 
 
 @app.route("/admin")

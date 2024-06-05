@@ -126,3 +126,4 @@ Insert into Course values ('noc24-cs15', 'Blockchain and its Applications', 12, 
 Insert into Course values ('noc24-cs27', 'Foundations of Cyber Physical Systems', 12, 'https://nptel.ac.in/courses/106105241', 'Yes');
 Insert into Course values ('noc24-cs31', 'Information Security - 5 - Secure Systems Engineering', 8, 'https://nptel.ac.in/courses/106106199', 'Yes');
 Insert into Course values ('noc24-cs48', 'Systems and Usable Security', 4, 'https://nptel.ac.in/courses/106106234', 'Yes');
+    
