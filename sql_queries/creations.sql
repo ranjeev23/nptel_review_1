@@ -1,9 +1,5 @@
 use nptel_management;
 
-show full processlist;
-
-
-
 DROP TABLE IF EXISTS student;
 DROP TABLE IF EXISTS teacher;
 DROP TABLE IF EXISTS course;
@@ -16,15 +12,15 @@ DROP TABLE IF EXISTS rejected;
 
 create table STUDENT(
 dig_id TEXT,
-regno INTEGER,
+regno BIGINT primary key,
 st_name TEXT,
 dob DATE,
 gender TEXT,
 dept TEXT,
 section TEXT,
-email_id VARCHAR(100) primary key,
-sem TEXT,
-acc_year TEXT,
+email_id VARCHAR(100),
+sem VARCHAR(10),
+acc_year VARCHAR(15),
 pass_word TEXT
 );
 
@@ -43,27 +39,32 @@ if_yes VARCHAR(5)
 );
 
 create table REGISTER_COURSE(
-email_id varchar(255),
+regno BIGINT,
 c_code varchar(25),
-PRIMARY KEY (EMAIL_ID,C_CODE)
+PRIMARY KEY (regno,C_CODE)
 );
 
 create table certificate(
-email_id varchar(255),
+regno BIGINT,
 c_code Varchar(25),
 marks INTEGER,
-certificate_data LONGBLOB,
+certificate_link varchar(255),
 verified varchar(10),
 qr_code_url varchar(255),
-PRIMARY KEY (EMAIL_ID,C_CODE)
+upload_date datetime,
+PRIMARY KEY (regno,C_CODE)
 );
 
 create table NPTEL_MARKS(
-email_id  varchar(255),
+regno BIGINT,
 c_code varchar(20),
 verified_marks integer,
 ssn_marks integer,
-PRIMARY KEY (EMAIL_ID,C_CODE)
+verified_date datetime,
+sem VARCHAR(10),
+acc_year varchar(15),
+sem_type varchar(15),
+PRIMARY KEY (regno,C_CODE)
 );
 
 create table Ad_min(
@@ -79,11 +80,13 @@ ACC_YEAR varchar(15)
 );
 
 create table rejected(
-std_email_id varchar(255),
+regno varchar(255),
 C_CODE VARCHAR(10),
 teacher_email_id varchar(255),
-issue varchar(255)
+issue varchar(255),
+rejected_date datetime
 );
+
 
 Insert into STUDENT values ('2210197', 3122225002088, 'Nitish', '2004-03-12', 'Male', 'Information Technology', 'B', 'nitish2210197@ssn.edu.in', '4', '2022-2023', 'nitish123');
 Insert into STUDENT values ('2210215', 3122225003103, 'Ranjeev', '2004-02-28', 'Male', 'Information Technology', 'B', 'ranjeev2210215@ssn.edu.in', '4', '2022-2023', 'ranjeev123');

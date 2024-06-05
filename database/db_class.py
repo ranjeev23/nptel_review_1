@@ -818,6 +818,41 @@ LIMIT 5;
         print(records)
         return records
 
+    # CODE TO DELETE CERTIFICATE FOR STUDENT
+    def delete_certificate(self,regno,c_code):
+        query_det = f"""
+        select certificate_link 
+        from certificate 
+        where regno = '{regno}' and c_code = '{c_code}';
+        """
+
+        self.cursor.execute(query_det)
+        cert_link = self.cursor.fetchone()[0]
+
+        # ranjeev2210215@ssn.edu.innoc24-cs15.pdf
+        print(cert_link)
+
+        query_det = f"""
+        delete from certificate where regno = {regno} and c_code = '{c_code}';
+        """
+
+        self.cursor.execute(query_det)
+
+        self.db.commit()
+
+        print('succesfully deleted')
+
+        return cert_link
+
+    # add to rejected table
+    def add_rejected(self,reg_no,c_code,teacher_email,issue):
+        query_ins = f"""
+        insert into rejected (regno, c_code, teacher_email_id, issue, rejected_date) values ('{reg_no}', '{c_code}', '{teacher_email}', '{issue}', CURRENT_TIMESTAMP)
+        """
+        self.cursor.execute(query_ins)
+
+        self.db.commit()
+
 
 my_db_connect = mysql_connector("localhost", "root", "password", "nptel_management")
 
@@ -841,7 +876,9 @@ my_db_connect = mysql_connector("localhost", "root", "password", "nptel_manageme
 
 # my_db_connect.get_course_details(['Database Management Systems','Mechatronics'])
 
-my_db_connect.student_details()
+# my_db_connect.student_details()
+
+# my_db_connect.delete_certificate(3122225003103, "noc24-cs15")
 
 # my_db_connect.admin_verifcation_std_list()
 
@@ -858,3 +895,5 @@ my_db_connect.student_details()
 # my_db_connect.get_ver_details_admin('rahul.sharma@ssn.edu.in','IT101')
 
 # my_db_connect.update_cert_correct('rahul.sharma@ssn.edu.in','IT101')
+
+my_db_connect.add_rejected(3122225003103, "noc24-cs31", "gayathri@ssn.edu.in",'please add the correct the certificate')

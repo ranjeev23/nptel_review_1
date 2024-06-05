@@ -228,11 +228,30 @@ def correct():
     print('succesfully added to correct db')
     return jsonify("succesfully added to correct db")
 
-@app.route('/wrong', methods=["POST"])
+
+# please use this function
+@app.route('/delete-certificate', methods=['POST'])
+def delete_certificate():
+    reg_no = request.form['regno']
+    c_code = request.form['c_code']
+    cert_link = my_db_connect.delete_certificate(reg_no,c_code)
+
+    file_path = "./static/upload/"+cert_link
+
+    if os.path.exists(file_path):
+        os.remove(file_path)
+        print(f"{file_path} has been deleted successfully.")
+    else:
+        print(f"{file_path} does not exist.")
+
+@app.route('/wrong', methods = ['POST'])
 def wrong():
-    print(request.form)
-    print('wrongggg')
-    my_db_connect.update_cert_wrong(email_id,c_code)
+    reg_no = request.form["regno"]
+    c_code = request.form["c_code"]
+    teacher_email = session['username']
+    issue = request.form['issue']
+    my_db_connect.add_rejected(reg_no,c_code,teacher_email,issue)
+    my_db_connect.update_cert_wrong(reg_no,c_code)
     print('succesfully added to wrong db')
 
 
